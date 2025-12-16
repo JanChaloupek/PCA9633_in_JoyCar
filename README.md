@@ -36,3 +36,4 @@ Pokud začneme používat adresu 0x62, tak můžeme v inicializaci použít tyto
 i2c.write(0x62, bytes([0, 0x00]))
 i2c.write(0x62, bytes([8, 0xAA]))
 ```
+
