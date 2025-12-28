@@ -88,8 +88,8 @@ Každý motor má dva PWM kanály – jeden pro směr dopředu, druhý pro směr
 Kód není psaný pro konkrétní implementaci MicroPythonu. Není tedy přímo použitelný ani na Micro:bitu, ani na Pico:edu. Slouží pouze jako ukázka principu objektové implementace.
 
 ### Mapa kanálů
-- Motor A: PWM0 (dozadu), PWM1 (dopředu)  
-- Motor B: PWM2 (dozadu), PWM3 (dopředu)
+- Motor A (pravý): PWM0 (dozadu), PWM1 (dopředu)  
+- Motor B (levý): PWM2 (dozadu), PWM3 (dopředu)
 
 ---
 
