@@ -85,6 +85,8 @@ i2c.write(0x62, bytes([8, 0xAA]))  # LEDOUT
 Níže je jednoduchá třída `MotorDriver`, která obsluhuje PCA9633 na adrese **0x62**.  
 Každý motor má dva PWM kanály – jeden pro směr dopředu, druhý pro směr dozadu.
 
+Kód není psaný pro konkrétní implementaci MicroPythonu. Není tedy přímo použitelný ani na Micro:bitu, ani na Pico:edu. Slouží pouze jako ukázka principu objektové implementace.
+
 ### Mapa kanálů
 - Motor A: PWM0 (dopředu), PWM1 (dozadu)  
 - Motor B: PWM2 (dopředu), PWM3 (dozadu)
@@ -151,6 +153,10 @@ class MotorDriver:
 ## Ukázka použití
 
 ```python
+from machine import Pin, I2C
+from time import sleep
+from motor import MotorDriver
+
 # Inicializace I2C
 i2c = I2C(0, scl=Pin(17), sda=Pin(16))
 
