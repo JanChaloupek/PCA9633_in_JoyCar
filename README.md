@@ -75,7 +75,7 @@ V praxi je ale jednodušší si hodnoty PWM uchovávat v instanci motoru, než j
 ## Inicializace při použití adresy 0x62
 
 ```python
-i2c.write(0x62, bytes([0, 0x00]))  # MODE1 – probuzení
+i2c.write(0x62, bytes([0, 0x00]))  # MODE1 – probuzení a zakázání všech SW adres
 sleep(0.002)                       # ~2 ms podle datasheetu
 i2c.write(0x62, bytes([8, 0xAA]))  # LEDOUT – PWM režim
 ```
