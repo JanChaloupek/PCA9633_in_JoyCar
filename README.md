@@ -1,39 +1,177 @@
-# JoyCar - ovládání motorů
+# JoyCar – ovládání motorů
 
-Pro ovládaní motorů je na joycar-u použitý obvod **PCA9633**. Je to LED driver pro 4 (skupiny) LED. Ale místo LED jsou připojeny motory (dává to napětí pro jednotlivé směry motorů). 
+Pro ovládání motorů je na JoyCaru použitý obvod **PCA9633**. Je to LED driver pro 4 (skupiny) LED, ale na JoyCaru jsou na jeho výstupy připojené motory. Obvod tedy nedává „PWM pro LED“, ale **napětí pro jednotlivé směry motorů**.  
 **Datasheet je k dispozici [zde](datasheet/PCA9633.pdf).**
 
-## Adresování PCA9633
-Tento driver (budič) má možnost na i2c vystupovat až na pěti adresách.
-### HW a SW adresy
-- **HW adresa:** 0x62 (na starší verzi joycar-u: 0x60).  
-  8 pinový čip PCA9633 má adresu 0x62 (nejde ji změnit), 10 pinový může mít adresu 0x60 až 0x63 (podle toho na jaké napětí připojíme piny A0 a A1). Ještě existuje 16 pinová verze tohoto čipu, u která má všech 7 bitů adresy vyvedeny (A0 až A6) a šlo by tedy připojní vhodných napětí zvolit jakoukoliv i2c adresu.  
-- **SW adresy:** Až čtyři adresy nastavitelné pomocí registrů **SUBADR1**, **SUBADR2**, **SUBADR3**, **ALLCALLADR**.
-Všechny 4 SW adresy jsou vypínatelné, včetně adresy **0x70**! (Viz registr **MODE1**).  
-  Poznámka: *Adresy a popis jednotlivých registrů budiče je uvedený níže*.
+---
 
-### Struktura registrů
-- **Control registr**  
-První byte, který zapíšeme do i2c na adresu budiče PCA9633 se dostane do **control registru** (strana 10 v datasheetu). Podle hodnoty ve spodním polovině bytu (nibble) se adresuje registr, do kterého chceme následně zapsat/nebo z něj číst (seznam adres registrů je uveden na straně 11 v datasheetu). Horní nibble přikazuje jestli a jak se mají měnit adresy pro příští zápis do registru. Tuto možnost ale nevyužíváme - vždy zapisujeme jen 2 byte (control registr, hodnota pro další registr).  
-![ControlRegistr](img/PCA9633%20-%201%20Control%20register.png)
+## Adresování PCA9633
+
+Tento budič může na sběrnici I²C vystupovat až na pěti různých adresách.
+
+### HW a SW adresy
+
+- **HW adresa:** 0x62 (na starší verzi JoyCaru: 0x60).  
+  8pinová verze PCA9633 má pevnou adresu 0x62.  
+  10pinová verze může mít adresu 0x60 až 0x63 podle toho, jak jsou připojené piny A0 a A1.  
+  Existuje i 16pinová varianta, která má vyvedeny všechny adresové bity (A0–A6), takže by bylo možné nastavit libovolnou I²C adresu.
+
+- **SW adresy:**  
+  Až čtyři softwarové adresy nastavitelné pomocí registrů **SUBADR1**, **SUBADR2**, **SUBADR3** a **ALLCALLADR**.  
+  Všechny čtyři lze vypnout — včetně adresy **0x70** (viz registr **MODE1**).
+
+---
+
+## Struktura registrů
+
+### Control registr
+
+První byte, který zapíšeme na I²C adresu budiče, se uloží do **control registru** (strana 10 datasheetu).  
+Spodní nibble určuje, **který registr chceme číst nebo zapisovat** (seznam je na straně 11).  
+Horní nibble nastavuje automatické inkrementování adresy registrů — tuto funkci ale nevyužíváme.  
+V praxi tedy vždy zapisujeme jen **dva byty**:  
+1. control registr  
+2. hodnota cílového registru
+
+![ControlRegistr](img/PCA9633%20-%201%20Control%20register.png)  
 ![RegisterList](img/PCA9633%20-%202%20Register%20definition.png)
 
-- **MODE1 registr**  
-  Při inicializaci motorů jsou v návodech joycar-u použíté následující dvojice bytů: [0x00, 0x01] a [0xE8, 0xAA].  
-  První dvojice bytů [0x00, 0x01] způsobí zápis do registru 0 (**MODE1**). Vypne sleep a vypne 3 i2c subadresy (**SUBADR1**, **SUBADR2**, **SUBADR3**) ale **ALLCALLADR** zůstane zapnutá. Probuzení ze sleep-u by mělo trvat 500us (strana 12 v datasheetu). Proto hned po inicializaci nefunguje ovládání motorů. Ale měl by tedy s rezervou stačit sleep(2).  
+---
+
+### Registr MODE1
+
+Při inicializaci motorů se v návodech JoyCaru používají dvojice bytů:
+
+- `[0x00, 0x01]` – zápis do registru 0 (**MODE1**)  
+  - vypne sleep  
+  - vypne subadresy **SUBADR1**, **SUBADR2**, **SUBADR3**  
+  - **ALLCALLADR** zůstává aktivní  
+  - probuzení ze sleepu trvá cca 500 µs (datasheet str. 12), takže je vhodné po inicializaci udělat krátké `sleep(2)`
+
 ![Register MODE1](img/PCA9633%20-%204%20Register%201%20-%20MODE1.png)
-  
-- **LEDOUT registr**  
-  Druhá dvojice bytů [0xE8, 0xAA] způsobí zápis do registru 8 (**LEDOUT**). Hodnota 0xAA říká, že všechny 4 výstupy se mají řídit přes registry PWMx (strana 14 v datasheetu).  
+
+---
+
+### Registr LEDOUT
+
+Druhá dvojice bytů `[0xE8, 0xAA]` zapisuje do registru 8 (**LEDOUT**).  
+Hodnota `0xAA` říká, že **všechny čtyři výstupy** budou řízeny přes registry **PWMx** (datasheet str. 14).
+
 ![Register LEDOUT](img/PCA9633%20-%203%20Register%208%20-%20LEDOUT.png)
 
-- **PWMx registry**  
-  Když zapisujeme na adresu 2 až 5, zapisujeme do registrů **PWM0** až **PWM3** (strana 13 v datasheetu). Hodnoty těchto registrů jdou i přečíst (ne jen zapsat). Ale z hlediska SW v micro:bit-u/pico:ed-u bude jednodušší, si hodnoty pwm zapamatovat jako atribut v instanci motoru než vyčítat 2 registry přes I2c.  
+---
+
+### Registry PWMx
+
+Adresy 2–5 odpovídají registrům **PWM0** až **PWM3** (datasheet str. 13).  
+Hodnoty lze nejen zapisovat, ale i číst.  
+V praxi je ale jednodušší si hodnoty PWM uchovávat v instanci motoru, než je pokaždé vyčítat přes I²C.
+
 ![Register PWMx](img/PCA9633%20-%205%20Register%202-5%20-%20PWMx.png)
 
-Pokud začneme používat adresu 0x62, tak můžeme v inicializaci použít tyto zápisy:
-```
-i2c.write(0x62, bytes([0, 0x00]))
-i2c.write(0x62, bytes([8, 0xAA]))
+---
+
+## Inicializace při použití adresy 0x62
+
+```python
+i2c.write(0x62, bytes([0, 0x00]))  # MODE1
+i2c.write(0x62, bytes([8, 0xAA]))  # LEDOUT
 ```
 
+---
+
+# Objektová verze ovládání motorů
+
+Níže je jednoduchá třída `MotorDriver`, která obsluhuje PCA9633 na adrese **0x62**.  
+Každý motor má dva PWM kanály – jeden pro směr dopředu, druhý pro směr dozadu.
+
+### Mapa kanálů
+- Motor A: PWM0 (dopředu), PWM1 (dozadu)  
+- Motor B: PWM2 (dopředu), PWM3 (dozadu)
+
+---
+
+## Třída MotorDriver
+
+```python
+from machine import I2C, Pin
+from time import sleep
+
+class MotorDriver:
+    def __init__(self, i2c, address=0x62):
+        self.i2c = i2c
+        self.address = address
+
+        # Inicializace PCA9633
+        self.i2c.write(self.address, bytes([0, 0x00]))  # MODE1 – probuzení
+        sleep(0.002)
+        self.i2c.write(self.address, bytes([8, 0xAA]))  # LEDOUT – PWM režim
+
+        # Uložené hodnoty PWM (není nutné, ale praktické)
+        self.pwm = [0, 0, 0, 0]
+
+    def set_pwm(self, channel, value):
+        """Nastaví PWM kanál (0–3) na hodnotu 0–255."""
+        value = max(0, min(255, value))
+        self.pwm[channel] = value
+        self.i2c.write(self.address, bytes([2 + channel, value]))
+
+    def motorA(self, speed):
+        """Řízení motoru A: speed -255 až +255."""
+        if speed > 0:
+            self.set_pwm(0, speed)
+            self.set_pwm(1, 0)
+        elif speed < 0:
+            self.set_pwm(0, 0)
+            self.set_pwm(1, -speed)
+        else:
+            self.set_pwm(0, 0)
+            self.set_pwm(1, 0)
+
+    def motorB(self, speed):
+        """Řízení motoru B: speed -255 až +255."""
+        if speed > 0:
+            self.set_pwm(2, speed)
+            self.set_pwm(3, 0)
+        elif speed < 0:
+            self.set_pwm(2, 0)
+            self.set_pwm(3, -speed)
+        else:
+            self.set_pwm(2, 0)
+            self.set_pwm(3, 0)
+
+    def stop(self):
+        """Zastaví oba motory."""
+        self.motorA(0)
+        self.motorB(0)
+```
+
+---
+
+## Ukázka použití
+
+```python
+# Inicializace I2C
+i2c = I2C(0, scl=Pin(17), sda=Pin(16))
+
+# Vytvoření instance driveru
+motors = MotorDriver(i2c)
+
+# Jízda dopředu
+motors.motorA(150)
+motors.motorB(150)
+sleep(2)
+
+# Zatáčka doprava
+motors.motorA(50)
+motors.motorB(200)
+sleep(1)
+
+# Zpátečka
+motors.motorA(-180)
+motors.motorB(-180)
+sleep(1)
+
+# Stop
+motors.stop()
+```
