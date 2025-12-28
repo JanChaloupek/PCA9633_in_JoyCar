@@ -88,8 +88,8 @@ Každý motor má dva PWM kanály – jeden pro směr dopředu, druhý pro směr
 Kód není psaný pro konkrétní implementaci MicroPythonu. Není tedy přímo použitelný ani na Micro:bitu, ani na Pico:edu. Slouží pouze jako ukázka principu objektové implementace.
 
 ### Mapa kanálů
-- Motor A: PWM0 (dopředu), PWM1 (dozadu)  
-- Motor B: PWM2 (dopředu), PWM3 (dozadu)
+- Motor A: PWM0 (dozadu), PWM1 (dopředu)  
+- Motor B: PWM2 (dozadu), PWM3 (dopředu)
 
 ---
 
@@ -121,20 +121,20 @@ class MotorDriver:
     def motorA(self, speed):
         """Řízení motoru A: speed -255 až +255."""
         if speed < 0:
-            self.set_pwm(0, 0)
-            self.set_pwm(1, -speed)
-        else:
             self.set_pwm(1, 0)
-            self.set_pwm(0, speed)
+            self.set_pwm(0, -speed)
+        else:
+            self.set_pwm(0, 0)
+            self.set_pwm(1, speed)
 
     def motorB(self, speed):
         """Řízení motoru B: speed -255 až +255."""
         if speed < 0:
-            self.set_pwm(2, 0)
-            self.set_pwm(3, -speed)
-        else:
             self.set_pwm(3, 0)
-            self.set_pwm(2, speed)
+            self.set_pwm(2, -speed)
+        else:
+            self.set_pwm(2, 0)
+            self.set_pwm(3, speed)
 
     def stop(self):
         """Zastaví oba motory."""
