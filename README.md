@@ -24,13 +24,14 @@ Tento budič může na sběrnici I²C vystupovat až na pěti různých adresác
 
 ## Struktura registrů
 
-### Control registr
+### Control byte
 
-První byte, který zapíšeme na I²C adresu budiče, se uloží do **control registru** (strana 10 datasheetu).  
+První byte, který zapíšeme na I²C adresu budiče, je tzv. **control byte** (strana 10 datasheetu).  
 Spodní nibble určuje, **který registr chceme číst nebo zapisovat** (seznam je na straně 11).  
 Horní nibble nastavuje automatické inkrementování adresy registrů — tuto funkci ale nevyužíváme.  
+
 V praxi tedy vždy zapisujeme jen **dva byty**:  
-1. control registr  
+1. control byte  
 2. hodnota cílového registru
 
 ![ControlRegistr](img/PCA9633%20-%201%20Control%20register.png)  
@@ -46,7 +47,7 @@ Při inicializaci motorů se v návodech JoyCaru používají dvojice bytů:
   - vypne sleep  
   - vypne subadresy **SUBADR1**, **SUBADR2**, **SUBADR3**  
   - **ALLCALLADR** zůstává aktivní  
-  - probuzení ze sleepu trvá cca 500 µs (datasheet str. 12), takže je vhodné po inicializaci udělat krátké `sleep(2)`
+  - probuzení ze sleepu trvá cca 500 µs (datasheet str. 12), proto v kódu používáme `sleep(0.002)` (2 ms)
 
 ![Register MODE1](img/PCA9633%20-%204%20Register%201%20-%20MODE1.png)
 
@@ -74,8 +75,9 @@ V praxi je ale jednodušší si hodnoty PWM uchovávat v instanci motoru, než j
 ## Inicializace při použití adresy 0x62
 
 ```python
-i2c.write(0x62, bytes([0, 0x00]))  # MODE1
-i2c.write(0x62, bytes([8, 0xAA]))  # LEDOUT
+i2c.write(0x62, bytes([0, 0x00]))  # MODE1 – probuzení
+sleep(0.002)                       # ~2 ms podle datasheetu
+i2c.write(0x62, bytes([8, 0xAA]))  # LEDOUT – PWM režim
 ```
 
 ---
@@ -85,9 +87,14 @@ i2c.write(0x62, bytes([8, 0xAA]))  # LEDOUT
 Níže je jednoduchá třída `MotorDriver`, která obsluhuje PCA9633 na adrese **0x62**.  
 Každý motor má dva PWM kanály – jeden pro směr dopředu, druhý pro směr dozadu.
 
-Kód není psaný pro konkrétní implementaci MicroPythonu. Není tedy přímo použitelný ani na Micro:bitu, ani na Pico:edu. Slouží pouze jako ukázka principu objektové implementace.
+Kód je psaný v MicroPython stylu (`machine.I2C`, `Pin`), ale není přímo spustitelný na Micro:bitu ani na Pico:edu. Slouží jako ukázka principu objektové implementace.
 
 ### Mapa kanálů
+
+> Poznámka: V návodu JoyCaru jsou motory označeny jako „kanály 2–5“ na adrese 0x70.  
+> Tyto kanály odpovídají registrům **PWM0–PWM3** čipu PCA9633.  
+> V této dokumentaci používáme přímo označení PWM0–PWM3 a HW adresu 0x62.
+
 - Motor A (pravý): PWM0 (dozadu), PWM1 (dopředu)  
 - Motor B (levý): PWM2 (dozadu), PWM3 (dopředu)
 
@@ -106,7 +113,7 @@ class MotorDriver:
 
         # Inicializace PCA9633
         self.i2c.write(self.address, bytes([0, 0x00]))  # MODE1 – probuzení
-        sleep(0.002)
+        sleep(0.002)                                    # ~2 ms
         self.i2c.write(self.address, bytes([8, 0xAA]))  # LEDOUT – PWM režim
 
         # Uložené hodnoty PWM (není nutné, ale praktické)
@@ -168,8 +175,8 @@ motors.motorB(200)
 sleep(1)
 
 # Zpátečka
-motors.motorA(-180)
-motors.motorB(-180)
+motors.motorA(-150)
+motors.motorB(-150)
 sleep(1)
 
 # Stop
