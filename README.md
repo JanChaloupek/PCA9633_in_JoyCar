@@ -120,27 +120,21 @@ class MotorDriver:
 
     def motorA(self, speed):
         """Řízení motoru A: speed -255 až +255."""
-        if speed > 0:
-            self.set_pwm(0, speed)
-            self.set_pwm(1, 0)
-        elif speed < 0:
+        if speed < 0:
             self.set_pwm(0, 0)
             self.set_pwm(1, -speed)
         else:
-            self.set_pwm(0, 0)
             self.set_pwm(1, 0)
+            self.set_pwm(0, speed)
 
     def motorB(self, speed):
         """Řízení motoru B: speed -255 až +255."""
-        if speed > 0:
-            self.set_pwm(2, speed)
-            self.set_pwm(3, 0)
-        elif speed < 0:
+        if speed < 0:
             self.set_pwm(2, 0)
             self.set_pwm(3, -speed)
         else:
-            self.set_pwm(2, 0)
             self.set_pwm(3, 0)
+            self.set_pwm(2, speed)
 
     def stop(self):
         """Zastaví oba motory."""
@@ -155,7 +149,7 @@ class MotorDriver:
 ```python
 from machine import Pin, I2C
 from time import sleep
-from motor import MotorDriver
+from motorDriver import MotorDriver
 
 # Inicializace I2C
 i2c = I2C(0, scl=Pin(17), sda=Pin(16))
@@ -168,7 +162,7 @@ motors.motorA(150)
 motors.motorB(150)
 sleep(2)
 
-# Zatáčka doprava
+# Zatáčka
 motors.motorA(50)
 motors.motorB(200)
 sleep(1)
